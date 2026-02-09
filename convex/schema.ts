@@ -5,6 +5,9 @@ export default defineSchema({
   games: defineTable({
     status: v.union(v.literal("waiting"), v.literal("active"), v.literal("finished")),
     gridSize: v.number(), // e.g., 4 means 4x4 dots = 3x3 boxes
+
+    hostPlayerId: v.string(),
+
     players: v.array(
       v.object({
         id: v.string(), // userId or "AI"

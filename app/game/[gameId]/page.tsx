@@ -9,8 +9,10 @@ import { Header } from "@/components/ui/Header";
 import Image from "next/image";
 import background from "@/public/background.jpg";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { TriggerConfetti } from "@/lib/Confetti";
+import { Button } from "@/components/ui/button";
+import { ShareGameModal } from "@/components/ShareGameModal";
 
 
 export default function GamePage() {
@@ -21,24 +23,39 @@ export default function GamePage() {
         gameId: gameId as any,
     });
 
-    useEffect(() => {
-        if (game?.status === "finished") {
-            // Calculate the winner
-            const winner = game?.players.reduce((prev, curr) =>
-                curr.score > prev.score ? curr : prev
-            );
+    const [shareOpen, setShareOpen] = useState(false);
 
-            // Trigger the toast
-            toast.success(`🎉 Game Over! Winner: ${winner.name}`, {
-                description: `Final Score: ${winner.score}`,
-                position: "top-center"
+    useEffect(() => {
+        if (!game || game.status !== "finished") return;
+
+        const localPlayerId = localStorage.getItem(`dots-boxes-role-${game._id}`);
+        if (!localPlayerId) return;
+
+        const winner = game.players.reduce((prev, curr) =>
+            curr.score > prev.score ? curr : prev
+        );
+
+        const localPlayer = game.players.find(p => p.id === localPlayerId);
+
+        if (!localPlayer) return;
+
+        if (localPlayer.id === winner.id) {
+            toast.success(`🎉 Congratulations ${localPlayer.name}! You won!`, {
+                description: `Final Score: ${localPlayer.score}`,
+                position: "top-center",
             });
 
             setTimeout(() => {
                 TriggerConfetti();
             }, 10);
+        } else {
+            toast.error(`🤡 Hold this 'L'.`, {
+                description: `Winner is  ${winner.name} with score: ${winner.score}`,
+                position: "top-center",
+            });
         }
-    }, [game?.status, game?.players]);
+    }, [game?.status]);
+
 
     if (!game) {
         return (
@@ -47,6 +64,8 @@ export default function GamePage() {
             </main>
         );
     }
+
+    const isWaiting = game.status === "waiting";
 
 
     return (
@@ -67,6 +86,8 @@ export default function GamePage() {
 
 
                 <div className="relative z-11"><Header onMarketingPage={false} /></div>
+
+
                 <div className="min-h-screen flex flex-col items-center gap-6 p-6 relative z-10 pt-24">
 
                     <ScoreBoard
@@ -74,12 +95,32 @@ export default function GamePage() {
                         currentTurnPlayerId={game.currentTurnPlayerId}
                     />
 
-                    <GameBoard
+                    {isWaiting && (
+                        <div className="flex flex-col items-center gap-3">
+                            <p className="text-lg font-medium">
+                                Waiting for another player to join...
+                            </p>
+                            <Button onClick={() => setShareOpen(true)}>
+                                Share Game Code
+                            </Button>
+                        </div>
+                    )}
+
+                    {!isWaiting && (
+                        <GameBoard
+                            gameId={game._id}
+                            gridSize={game.gridSize}
+                            edges={game.edges}
+                            boxes={game.boxes}
+                            currentTurnPlayerId={game.currentTurnPlayerId}
+                            players={game.players}
+                        />
+                    )}
+
+                    <ShareGameModal
+                        open={shareOpen}
+                        onOpenChange={setShareOpen}
                         gameId={game._id}
-                        gridSize={game.gridSize}
-                        edges={game.edges}
-                        boxes={game.boxes}
-                        currentTurnPlayerId={game.currentTurnPlayerId}
                     />
                 </div>
             </div>

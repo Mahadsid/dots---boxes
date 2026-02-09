@@ -2,7 +2,8 @@
 
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 type Dot = { x: number; y: number };
 type Edge = {
@@ -26,14 +27,22 @@ export function GameBoard({
     edges,
     boxes,
     currentTurnPlayerId,
+    players,
 }: {
     gameId: string;
     gridSize: number;
     edges: Edge[];
     boxes: Box[];
     currentTurnPlayerId: string;
+    players: { id: string; name: string }[];
 }) {
     const makeMove = useMutation(api.games.makeMove);
+    const [localPlayerId, setLocalPlayerId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const role = localStorage.getItem(`dots-boxes-role-${gameId}`);
+        setLocalPlayerId(role);
+    }, [gameId]);
 
     const spacing = 80;
     const padding = 40;
@@ -45,15 +54,28 @@ export function GameBoard({
         return map;
     }, [edges]);
 
+    const isMyTurn = localPlayerId === currentTurnPlayerId;
+
     async function handleEdgeClick(edgeId: string) {
+        if (!localPlayerId) {
+            toast.error("Unable to determine your player role.");
+            return;
+        }
+
+        if (!isMyTurn) {
+            const currentPlayer = players.find(p => p.id === currentTurnPlayerId);
+            toast.error(`It's ${currentPlayer?.name}'s turn.`);
+            return;
+        }
+
         try {
             await makeMove({
                 gameId,
-                playerId: currentTurnPlayerId,
+                playerId: localPlayerId,
                 edgeId,
             });
         } catch (err: any) {
-            alert(err.message);
+            toast.error(err.message || "Invalid move.");
         }
     }
 
@@ -61,7 +83,7 @@ export function GameBoard({
         <svg
             width={size}
             height={size}
-            className=" bg-accent rounded-lg shadow border"
+            className="bg-accent rounded-lg shadow border"
         >
             {/* Render boxes */}
             {boxes.map((box) => {
@@ -70,10 +92,8 @@ export function GameBoard({
                 const topEdge = edgeMap.get(box.topEdgeId)!;
                 const leftEdge = edgeMap.get(box.leftEdgeId)!;
 
-                const x =
-                    padding + topEdge.from.x * spacing;
-                const y =
-                    padding + leftEdge.from.y * spacing;
+                const x = padding + topEdge.from.x * spacing;
+                const y = padding + leftEdge.from.y * spacing;
 
                 return (
                     <rect
@@ -97,6 +117,7 @@ export function GameBoard({
                 const y2 = padding + edge.to.y * spacing;
 
                 const isClaimed = !!edge.claimedBy;
+                const isClickable = !isClaimed && isMyTurn;
 
                 return (
                     <line
@@ -114,7 +135,11 @@ export function GameBoard({
                         }
                         strokeWidth={isClaimed ? 6 : 4}
                         strokeLinecap="round"
-                        className={!isClaimed ? "cursor-pointer hover:stroke-black" : ""}
+                        className={
+                            isClickable
+                                ? "cursor-pointer hover:stroke-black"
+                                : "cursor-not-allowed"
+                        }
                         onClick={() => {
                             if (!isClaimed) handleEdgeClick(edge.id);
                         }}
