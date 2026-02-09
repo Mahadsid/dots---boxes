@@ -7,39 +7,36 @@ import {
   getNextPlayerId,
   isGameFinished,
 } from "./helpers/gameLogic";
-import { Game, Player, Edge, Box } from "./helpers/types";
+import { Player } from "./helpers/types";
 
 /**
- * Create a new game (Player vs Computer or Player vs Player placeholder).
+ * Create a hosted game (Player 1 waits for Player 2).
  */
-export const createGame = mutation({
+export const createHostedGame = mutation({
   args: {
     gridSize: v.number(),
-    playerName: v.string(),
-    mode: v.union(v.literal("vsAI"), v.literal("localPvP")),
+    hostName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { gridSize, playerName, mode } = args;
+    const hostPlayerId = "player1";
 
-    const players: Player[] =
-      mode === "vsAI"
-        ? [
-            { id: "player1", name: playerName, score: 0 },
-            { id: "AI", name: "Computer", score: 0 },
-          ]
-        : [
-            { id: "player1", name: playerName, score: 0 },
-            { id: "player2", name: "Player 2", score: 0 },
-          ];
+    const players: Player[] = [
+      {
+        id: hostPlayerId,
+        name: args.hostName?.trim() || "Player 1",
+        score: 0,
+      },
+    ];
 
-    const edges = generateEdges(gridSize);
-    const boxes = generateBoxes(gridSize);
+    const edges = generateEdges(args.gridSize);
+    const boxes = generateBoxes(args.gridSize);
 
     const gameId = await ctx.db.insert("games", {
-      status: "active",
-      gridSize,
+      status: "waiting",
+      gridSize: args.gridSize,
+      hostPlayerId,
       players,
-      currentTurnPlayerId: players[0].id,
+      currentTurnPlayerId: hostPlayerId,
       edges,
       boxes,
       createdAt: Date.now(),
@@ -47,6 +44,42 @@ export const createGame = mutation({
     });
 
     return gameId;
+  },
+});
+
+/**
+ * Join a hosted game using gameId.
+ */
+export const joinGame = mutation({
+  args: {
+    gameId: v.id("games"),
+    playerName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (game.status !== "waiting") {
+      throw new Error("Game already started or finished");
+    }
+
+    if (game.players.length !== 1) {
+      throw new Error("Game already has two players");
+    }
+
+    const newPlayer: Player = {
+      id: "player2",
+      name: args.playerName?.trim() || "Player 2",
+      score: 0,
+    };
+
+    await ctx.db.patch(args.gameId, {
+      players: [...game.players, newPlayer],
+      status: "active",
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });
 
@@ -116,7 +149,7 @@ export const makeMove = mutation({
     // Determine next turn
     const nextTurnPlayerId =
       completedCount > 0
-        ? playerId // player gets another turn if they completed a box
+        ? playerId
         : getNextPlayerId(players, playerId);
 
     // Check if game finished
