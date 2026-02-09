@@ -50,7 +50,7 @@ export default function GamePage() {
             }, 10);
         } else {
             toast.error(`🤡 Hold this 'L'.`, {
-                description: `Winner is  ${winner.name} with score: (${winner.score})`,
+                description: `Winner is  ${winner.name} with score: ${winner.score}`,
                 position: "top-center",
             });
         }
