@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
   games: defineTable({
-    status: v.union(v.literal("waiting"), v.literal("active"), v.literal("finished")),
+    status: v.union(v.literal("waiting"), v.literal("active"), v.literal("finished"), v.literal("replay_pending") ),
     gridSize: v.number(), // e.g., 4 means 4x4 dots = 3x3 boxes
 
     hostPlayerId: v.string(),
@@ -16,6 +16,7 @@ export default defineSchema({
       })
     ),
     currentTurnPlayerId: v.string(),
+    currentTurn: v.string(), // playerId
 
     // All edges in the grid
     edges: v.array(
@@ -36,6 +37,13 @@ export default defineSchema({
         bottomEdgeId: v.string(),
         leftEdgeId: v.string(),
         ownerId: v.union(v.string(), v.null()),
+      })
+    ),
+
+    replayRequest: v.union(
+      v.null(),
+      v.object({
+        requestedBy: v.string(), // playerId
       })
     ),
 

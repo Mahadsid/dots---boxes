@@ -37,8 +37,10 @@ export const createHostedGame = mutation({
       hostPlayerId,
       players,
       currentTurnPlayerId: hostPlayerId,
+      currentTurn: hostPlayerId,
       edges,
       boxes,
+      replayRequest: null, 
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -160,6 +162,7 @@ export const makeMove = mutation({
       boxes: updatedBoxes,
       players,
       currentTurnPlayerId: nextTurnPlayerId,
+      currentTurn: nextTurnPlayerId, // keep both in sync
       status: finished ? "finished" : game.status,
       updatedAt: Date.now(),
     });
@@ -170,5 +173,88 @@ export const makeMove = mutation({
       nextTurnPlayerId,
       gameFinished: finished,
     };
+  },
+});
+
+/**
+ * Player who LOST requests a replay.
+ */
+export const requestReplay = mutation({
+  args: {
+    gameId: v.id("games"),
+    playerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (game.status !== "finished") {
+      throw new Error("Game is not finished yet");
+    }
+
+    if (game.replayRequest) {
+      throw new Error("Replay already requested");
+    }
+
+    await ctx.db.patch(args.gameId, {
+      status: "replay_pending",
+      replayRequest: {
+        requestedBy: args.playerId,
+      },
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Respond to replay request.
+ */
+export const respondToReplay = mutation({
+  args: {
+    gameId: v.id("games"),
+    playerId: v.string(),
+    accept: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (game.status !== "replay_pending" || !game.replayRequest) {
+      throw new Error("No replay request pending");
+    }
+
+    const requesterId = game.replayRequest.requestedBy;
+
+    // Decline → go home
+    if (!args.accept) {
+      await ctx.db.patch(args.gameId, {
+        status: "finished",
+        replayRequest: null,
+        updatedAt: Date.now(),
+      });
+      return { declined: true };
+    }
+
+    // Accept → reset game state
+    const newPlayers = game.players.map((p) => ({
+      ...p,
+      score: 0,
+    }));
+
+    const newEdges = generateEdges(game.gridSize);
+    const newBoxes = generateBoxes(game.gridSize);
+
+    await ctx.db.patch(args.gameId, {
+      status: "active",
+      replayRequest: null,
+      edges: newEdges, // regenerate board
+      boxes: newBoxes, // regenerate board
+      players: newPlayers,
+      currentTurnPlayerId: requesterId, // challenger starts,challenger gets first chance play on rematch 
+      currentTurn: requesterId,
+      updatedAt: Date.now(),
+    });
+
+    return { declined: false };
   },
 });
