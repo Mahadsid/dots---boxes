@@ -14,15 +14,15 @@
 
 ### 🏠 Home Page
 
-![Home Page](./screenshots/homepage.png)
+<img src="./screenshots/homepage.PNG" width="600" height="600">
 
 ### 🎯 Gameplay
 
-![Gameplay](./screenshots/gameplay.png)
+<img src="./screenshots/gameplay.PNG" width="600" height="600">
 
 ### 🔁 Replay Challenge
 
-![Replay Modal](./screenshots/replay.png)
+<img src="./screenshots/replay.PNG" width="600" height="600">
 
 ---
 
