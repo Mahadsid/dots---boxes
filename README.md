@@ -81,7 +81,7 @@ This version supports:
 
 | Layer         | Technology                                         |
 | ------------- | -------------------------------------------------- |
-| Frontend      | Next.js 14 (App Router)                            |
+| Frontend      | Next.js 16                          |
 | Backend       | Convex (Real-time database + serverless functions) |
 | UI Components | shadcn/ui + Tailwind CSS                           |
 | Animations    | Confetti (shadcn integration)                      |
