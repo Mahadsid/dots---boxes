@@ -1,6 +1,6 @@
 # 🎮 Dots & Boxes — Real-Time Multiplayer Game
 
-> Play the classic **Dots & Boxes** game online with your friend — in real time, from anywhere in the world. Built with modern full-stack tools and real-time backend.
+> Play the classic **Dots & Boxes** game online with your friend in real time, from anywhere in the world. Built with modern full-stack tools and real-time backend.
 
 ---
 
