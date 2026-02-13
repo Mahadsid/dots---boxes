@@ -67,7 +67,8 @@ This version supports:
 
 - 🎉 Confetti animation for the winner
 - 🔔 Toast notifications for win/loss
-- Replay modal appears only once per match
+- Replay challenge modal appears for the loser.
+- Replay challenge accept/decline modal appears for winner.
 
 ### 🧑 Player Identity
 
