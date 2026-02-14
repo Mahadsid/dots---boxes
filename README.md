@@ -34,7 +34,7 @@ The player with the **most boxes** at the end wins!
 
 This version supports:
 
-- 🔥 Real-time multiplayer
+- 🔥 Real-time Duo-Player support
 - 🧑‍🤝‍🧑 Hosting & joining games with a code
 - 🔄 Re-challenge without leaving the game
 - 🎉 Confetti celebration for winners
