@@ -145,7 +145,7 @@ npm run dev
 
 ## 🎯 Future Enhancements
 
-- 🤖 Player vs Computer (AI mode)
+- 🤖 Player vs Computer (or AI mode)
 
 - 👥 Support for 3+ players
 
